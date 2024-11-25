@@ -1,0 +1,14 @@
+path: C:\Users\rober\Desktop\pedestrian_crosing_light_control_computer_vision\dataset
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 2
+names: ['movement_impared', 'pedestrians']
+
+roboflow:
+  workspace: robert12810-gmail-com
+  project: pedestrian_corssing
+  version: 1
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/robert12810-gmail-com/pedestrian_corssing/dataset/1
