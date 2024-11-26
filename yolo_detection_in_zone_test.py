@@ -114,6 +114,6 @@ video_path = "D:\\Nagrania praca inzynierska\\Obrobione\\30.mp4"
 
 # wózek na zakupy
 # video_path = "D:\\Nagrania praca inzynierska\\Obrobione\\49.mp4"
-model_path = "runs\\detect\\train\\weights\\best.pt"
+model_path = "models\\best.pt"
 
 run_yolo_inference(video_path, model_path)

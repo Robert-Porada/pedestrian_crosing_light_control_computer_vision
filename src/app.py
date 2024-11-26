@@ -17,6 +17,7 @@ import os
 from PyQt5.QtCore import Qt
 
 from yolo_annotator import yolo_model
+from algorithms_time import time_algorithms
 
 
 class MyApp(QWidget):
@@ -31,6 +32,7 @@ class MyApp(QWidget):
         )
         self.video_file_index = None
         self.yolo = yolo_model()
+        self.algorithms = time_algorithms()
         super().__init__()
         self.initUI()
 
@@ -46,7 +48,7 @@ class MyApp(QWidget):
 
         # WIDGET OPCJE APLIKACJI
         options_layout = QVBoxLayout()
-        self.options_label = QLabel("")
+        self.options_label = QLabel("Wybierz plik wideo do analizy")
         options_layout.addWidget(self.options_label)
 
         choose_file_button = QPushButton("Wybierz plik do analizy")
@@ -103,6 +105,33 @@ class MyApp(QWidget):
         self.label_czas_przechodzenia = QLabel("Przechodnie przeszli przejście w 0s")
         wyniki_layout.addWidget(self.label_czas_przechodzenia)
 
+        self.label_wynik_tree = QLabel("Predykcja drzewa decyzyjnego:")
+        wyniki_layout.addWidget(self.label_wynik_tree)
+
+        self.label_wynik_gauss = QLabel("Predykcja algorytmu autorskiego:")
+        wyniki_layout.addWidget(self.label_wynik_gauss)
+
+        self.label_wynik_classic = QLabel("Podejście klasyczne:")
+        wyniki_layout.addWidget(self.label_wynik_classic)
+
+        self.label_błąd_absolutny_tree = QLabel("Błąd absolutny drzewa decyzyjnego:")
+        wyniki_layout.addWidget(self.label_błąd_absolutny_tree)
+
+        self.label_błąd_absolutny_gauss = QLabel("Błąd absolutny algorytmu autorskiego:")
+        wyniki_layout.addWidget(self.label_błąd_absolutny_gauss)
+
+        self.label_błąd_absolutny_classic = QLabel("Błąd absolutny klasycznego podejścia:")
+        wyniki_layout.addWidget(self.label_błąd_absolutny_classic)
+
+        self.label_czas_zagrożenia_tree = QLabel("Czas zagrożenia drzewa decyzyjnego:")
+        wyniki_layout.addWidget(self.label_czas_zagrożenia_tree)
+
+        self.label_czas_zagrożenia_gauss = QLabel("Czas zagrożenia algorytmu autorskiego:")
+        wyniki_layout.addWidget(self.label_czas_zagrożenia_gauss)
+
+        self.label_czas_zagrożenia_classic = QLabel("Czas zagrożenia klasycznego podejścia:")
+        wyniki_layout.addWidget(self.label_czas_zagrożenia_classic)
+
         wyniki_widget = QWidget()
         wyniki_widget.setLayout(wyniki_layout)
 
@@ -142,8 +171,7 @@ class MyApp(QWidget):
         )
         if file_path:
             self.filepath = file_path
-            print(f"Wybrany plik: {file_path}")
-        self.options_label.setText(f"Wybrano plik: {os.path.basename(file_path)}")
+        self.options_label.setText(f"Wybrano plik: {os.path.basename(file_path)}, rozpocznij analizę")
         self.video_file_index = int(os.path.splitext(os.path.basename(file_path))[0]) - 1 #pliki zaczynają się od 1 a index od 0
 
     def read_xlsx_sheet(self, file_path, sheet_name):
@@ -166,7 +194,6 @@ class MyApp(QWidget):
             )
 
     def oblicz_wyniki(self):
-        print(self.data_group_corss)
         czas_przejscia = self.data_group_corss.iloc[self.video_file_index]["Czas przechodzenia od zielonego"]
         czas_zielonego = self.data_group_corss.iloc[self.video_file_index]["Początek ZŚ"]
         klatka_zielonego = self.data_group_corss.iloc[self.video_file_index]["Początek zielonego światła klatka"]
@@ -177,7 +204,28 @@ class MyApp(QWidget):
         grupa_oczekujacych = self.yolo.create_annotated_image(self.filepath, klatka_zielonego)
         self.show_image()
 
+        decision_tree_time = self.algorithms.predict_crossing_time_tree(grupa_oczekujacych)[0]
+        gaus_time = self.algorithms.predict_crossing_time_gaus(grupa_oczekujacych)[0]
+
+        self.label_wynik_tree.setText(f"Predykcja drzewa decyzyjnego: {decision_tree_time:.2f}s")
+        self.label_wynik_gauss.setText(f"Predykcja algorytmu autorskiego: {gaus_time:.2f}s")
+        self.label_wynik_classic.setText(f"Podejście klasyczne:{14}s")
         
+        self.label_błąd_absolutny_tree.setText(f"Błąd absolutny drzewa decyzyjnego: {abs(decision_tree_time - czas_przejscia):.2f}s")
+        self.label_błąd_absolutny_gauss.setText(f"Błąd absolutny algorytmu autorskiego: {abs(gaus_time - czas_przejscia):.2f}s")
+        self.label_błąd_absolutny_classic.setText(f"Błąd absolutny klasycznego podejścia: {abs(14 - czas_przejscia):.2f}s")
+
+        self.label_czas_zagrożenia_tree.setText(f"Błąd absolutny drzewa decyzyjnego: {self.oblicz_czas_zagrozenia(czas_przejscia, decision_tree_time):.2f}s")
+        self.label_czas_zagrożenia_gauss.setText(f"Błąd absolutny algorytmu autorskiego: {self.oblicz_czas_zagrozenia(czas_przejscia, gaus_time):.2f}s")
+        self.label_czas_zagrożenia_classic.setText(f"Błąd absolutny klasycznego podejścia: {self.oblicz_czas_zagrozenia(czas_przejscia, 14):.2f}s")
+
+
+    def oblicz_czas_zagrozenia(self, czas_przechodzenia_przechodniów, predykcja_czasu):
+        if predykcja_czasu + 4 < czas_przechodzenia_przechodniów:
+            czas_zagrozenia = czas_przechodzenia_przechodniów - (predykcja_czasu + 4)
+        else:
+            czas_zagrozenia = 0
+        return czas_zagrozenia
 
 
 if __name__ == "__main__":

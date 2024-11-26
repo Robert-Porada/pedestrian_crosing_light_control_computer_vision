@@ -7,7 +7,7 @@ import numpy as np
 
 class yolo_model():
     def __init__(self):
-        self.model = YOLO("runs\\detect\\train\\weights\\best.pt")
+        self.model = YOLO("models\\best.pt")
 
         self.polygon_lewa = np.array([[479, 641], [979, 783], [608, 1008], [89, 819]])
         self.polygon_prawa = np.array([[1196, 340], [1314, 278], [1690, 350], [1572, 414]])

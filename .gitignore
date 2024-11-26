@@ -1,4 +1,8 @@
 dataset
 env
 Dataset.xlsx
-1.mp4
+*.mp4
+runs
+algorithms.py
+yolo_model_test.py
+yolo_detection_in_zone_test.py
