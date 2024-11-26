@@ -8,15 +8,29 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QFileDialog,
 )
+from PyQt5.QtGui import QPixmap
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtCore import QUrl, QTimer
+import pandas as pd
+import os
+from PyQt5.QtCore import Qt
+
+from yolo_annotator import yolo_model
 
 
 class MyApp(QWidget):
     def __init__(self):
         self.filepath = "D:\\Nagrania praca inzynierska\\Obrobione\\30.mp4"
         self.options_label_text = ""
+        self.dataset_path = "Dataset.xlsx"
+        self.sheet_name_single_cross = "Jednostkowy czas przejścia"
+        self.sheet_name_group_cross = "Czas przejścia grupy"
+        self.data_group_corss = self.read_xlsx_sheet(
+            self.dataset_path, self.sheet_name_group_cross
+        )
+        self.video_file_index = None
+        self.yolo = yolo_model()
         super().__init__()
         self.initUI()
 
@@ -63,10 +77,36 @@ class MyApp(QWidget):
         self.elapsed_seconds = 0
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_timer)
-        
 
-        grid.addWidget(QLabel("Analiza strefy oczekiwania"), 1, 1)
-        grid.addWidget(QLabel("Wyniki"), 1, 2)
+
+        # WIDGET ZDJĘCIE WYNIK ANALIZY YOLO
+        self.image_label = QLabel("No Image Loaded")
+        self.image_label.setStyleSheet("border: 1px solid black;")
+        self.image_label.setAlignment(Qt.AlignCenter) 
+
+        image_layout = QVBoxLayout()
+        image_layout.addWidget(self.image_label)
+
+        image_widget = QWidget()
+        image_widget.setLayout(image_layout)
+
+        grid.addWidget(image_widget, 1, 1)
+
+        wyniki_layout = QVBoxLayout()
+
+        label_wyniki = QLabel("Wyniki")
+        wyniki_layout.addWidget(label_wyniki)
+
+        self.label_start_zielonego = QLabel("Zielone światło zaczęło się sekundzie: 0")
+        wyniki_layout.addWidget(self.label_start_zielonego)
+
+        self.label_czas_przechodzenia = QLabel("Przechodnie przeszli przejście w 0s")
+        wyniki_layout.addWidget(self.label_czas_przechodzenia)
+
+        wyniki_widget = QWidget()
+        wyniki_widget.setLayout(wyniki_layout)
+
+        grid.addWidget(wyniki_widget, 1, 2)
 
         # Set up the video player
         self.mediaPlayer = QMediaPlayer(None, QMediaPlayer.VideoSurface)
@@ -86,7 +126,9 @@ class MyApp(QWidget):
         self.mediaPlayer.play()
         # Uruchom timer
         self.elapsed_seconds = 0
-        self.timer.start(10)  # Update every 10ms
+        self.timer.start(10) #update every 10 ms
+        if  self.video_file_index is not None:
+            self.oblicz_wyniki()
 
     def update_timer(self):
         # Increment elapsed time and update the timer label
@@ -101,12 +143,44 @@ class MyApp(QWidget):
         if file_path:
             self.filepath = file_path
             print(f"Wybrany plik: {file_path}")
-        self.options_label.setText(f"Wybrano plik: {file_path}")
+        self.options_label.setText(f"Wybrano plik: {os.path.basename(file_path)}")
+        self.video_file_index = int(os.path.splitext(os.path.basename(file_path))[0]) - 1 #pliki zaczynają się od 1 a index od 0
+
+    def read_xlsx_sheet(self, file_path, sheet_name):
+        try:
+            df = pd.read_excel(file_path, sheet_name=sheet_name)
+            return df
+        except Exception as e:
+            print(f"Error reading the Excel file: {e}")
+            return None
+    
+    def show_image(self):
+        # Load and display the image
+        image_path = "results/inference.png"
+        pixmap = QPixmap(image_path)
+        if pixmap.isNull():
+            self.image_label.setText("Failed to Load Image")
+        else:
+            self.image_label.setPixmap(
+                pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio)
+            )
+
+    def oblicz_wyniki(self):
+        print(self.data_group_corss)
+        czas_przejscia = self.data_group_corss.iloc[self.video_file_index]["Czas przechodzenia od zielonego"]
+        czas_zielonego = self.data_group_corss.iloc[self.video_file_index]["Początek ZŚ"]
+        klatka_zielonego = self.data_group_corss.iloc[self.video_file_index]["Początek zielonego światła klatka"]
+
+        self.label_start_zielonego.setText(f"Zielone światło zaczęło się sekundzie: {czas_zielonego}")
+        self.label_czas_przechodzenia.setText(f"Przechodnie przeszli przejście w {czas_przejscia}s")
+
+        grupa_oczekujacych = self.yolo.create_annotated_image(self.filepath, klatka_zielonego)
+        self.show_image()
+
         
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     app_func = MyApp()
-    app_func.play_video()
     sys.exit(app.exec_())
