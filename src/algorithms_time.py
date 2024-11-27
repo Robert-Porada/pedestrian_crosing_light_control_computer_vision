@@ -17,8 +17,6 @@ class time_algorithms():
     def predict_crossing_time_tree(self, pedestrian_group):
         pedestrian_group = np.array(pedestrian_group)
         pedestrian_group = pedestrian_group.reshape(1, -1)
-        print("depth", self.decision_tree_model.get_depth())
-        print("leaves", self.decision_tree_model.get_n_leaves())
         czas_potrzebny_na_przejscie = self.decision_tree_model.predict(pedestrian_group)
         return czas_potrzebny_na_przejscie
     
