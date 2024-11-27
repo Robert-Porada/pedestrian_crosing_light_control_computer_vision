@@ -1,13 +1,6 @@
 import sys
 from PyQt5.QtWidgets import (
-    QApplication,
-    QWidget,
-    QLabel,
-    QGridLayout,
-    QPushButton,
-    QVBoxLayout,
-    QFileDialog,
-    
+    QApplication, QWidget, QLabel, QGridLayout, QPushButton, QVBoxLayout, QFileDialog
 )
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtMultimediaWidgets import QVideoWidget
@@ -32,7 +25,7 @@ class MyApp(QWidget):
 
         # Add "Opcje aplikacji" widget with a button to choose a file
         options_layout = QVBoxLayout()
-        options_label = QLabel("Opcje aplikacji")
+        options_label = QLabel('Opcje aplikacji')
         options_layout.addWidget(options_label)
 
         choose_file_button = QPushButton("Choose Video File")
@@ -55,9 +48,9 @@ class MyApp(QWidget):
         vbox.addWidget(play_button)
         grid.addLayout(vbox, 0, 1)
 
-        grid.addWidget(QLabel("Opcje aplikacji"), 0, 2)
-        grid.addWidget(QLabel("Wizualizacja algorytmów"), 1, 0)
-        grid.addWidget(QLabel("Analiza strefy oczekiwania"), 1, 1)
+        grid.addWidget(QLabel('Opcje aplikacji'), 0, 2)
+        grid.addWidget(QLabel('Wizualizacja algorytmów'), 1, 0)
+        grid.addWidget(QLabel('Analiza strefy oczekiwania'), 1, 1)
 
         # Add the image display section in the bottom middle widget
         self.image_label = QLabel("No Image Loaded")
@@ -74,11 +67,38 @@ class MyApp(QWidget):
         image_widget.setLayout(image_layout)
         grid.addWidget(image_widget, 2, 1)
 
-        grid.addWidget(QLabel("Wyniki"), 1, 2)
+        grid.addWidget(QLabel('Wyniki'), 1, 2)
 
-        # Add a timer label to the bottom left corner
-        self.timer_label = QLabel("Elapsed Time: 0s")
-        grid.addWidget(self.timer_label, 2, 0)
+        # Add a 2x3 grid in the bottom left widget
+        bottom_left_grid = QGridLayout()
+        self.number_labels = []
+        self.image_labels = []
+
+        # Top row: Numbers 1, 2, 3
+        for i in range(3):
+            number_label = QLabel(str(i + 1))
+            number_label.setAlignment(Qt.AlignCenter)
+            bottom_left_grid.addWidget(number_label, 0, i)
+            self.number_labels.append(number_label)
+
+        # Bottom row: Image placeholders
+        for i in range(3):
+            image_label = QLabel("No Image")
+            image_label.setAlignment(Qt.AlignCenter)
+            image_label.setStyleSheet("border: 1px solid black;")
+            bottom_left_grid.addWidget(image_label, 1, i)
+            self.image_labels.append(image_label)
+
+        # Add a button to load images
+        load_images_button = QPushButton("Load Images")
+        load_images_button.clicked.connect(self.load_images)
+
+        bottom_left_widget = QWidget()
+        bottom_left_layout = QVBoxLayout()
+        bottom_left_layout.addLayout(bottom_left_grid)
+        bottom_left_layout.addWidget(load_images_button)
+        bottom_left_widget.setLayout(bottom_left_layout)
+        grid.addWidget(bottom_left_widget, 2, 0)
 
         # Set up a timer to update the timer label
         self.elapsed_seconds = 0
@@ -94,17 +114,13 @@ class MyApp(QWidget):
         self.video_file_path = None
 
         # Set the main window properties
-        self.setWindowTitle(
-            "2x3 Grid Layout with Video Player, Timer, and Image Display"
-        )
+        self.setWindowTitle('2x3 Grid Layout with Video Player, Timer, and Image Display')
         self.setGeometry(300, 300, 800, 500)  # Set size and position
         self.show()
 
     def choose_file(self):
         # Open a file dialog to choose a video file
-        file_path, _ = QFileDialog.getOpenFileName(
-            self, "Choose Video File", "", "Video Files (*.mp4 *.avi *.mov *.mkv)"
-        )
+        file_path, _ = QFileDialog.getOpenFileName(self, "Choose Video File", "", "Video Files (*.mp4 *.avi *.mov *.mkv)")
         if file_path:
             self.video_file_path = file_path
             print(f"Selected file: {file_path}")
@@ -121,7 +137,7 @@ class MyApp(QWidget):
     def update_timer(self):
         # Increment elapsed time and update the timer label
         self.elapsed_seconds += 1
-        self.timer_label.setText(f"Elapsed Time: {self.elapsed_seconds}s")
+        self.image_label.setText(f"Elapsed Time: {self.elapsed_seconds}s")
 
     def show_image(self):
         # Load and display the image
@@ -130,14 +146,21 @@ class MyApp(QWidget):
         if pixmap.isNull():
             self.image_label.setText("Failed to Load Image")
         else:
-            self.image_label.setPixmap(
-                pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio)
-            )
+            self.image_label.setPixmap(pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio))
+
+    def load_images(self):
+        # Open a dialog to select three images
+        image_paths, _ = QFileDialog.getOpenFileNames(self, "Select Images", "", "Image Files (*.png *.jpg *.bmp)")
+        for i, image_path in enumerate(image_paths[:3]):  # Limit to three images
+            pixmap = QPixmap(image_path)
+            if not pixmap.isNull():
+                self.image_labels[i].setPixmap(pixmap.scaled(self.image_labels[i].size(), Qt.KeepAspectRatio))
+            else:
+                self.image_labels[i].setText("Failed to Load Image")
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     from PyQt5.QtCore import Qt  # Import here to prevent unused import error at top
-
     app = QApplication(sys.argv)
     ex = MyApp()
     sys.exit(app.exec_())

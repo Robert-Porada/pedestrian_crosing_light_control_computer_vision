@@ -14,7 +14,9 @@ from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtCore import QUrl, QTimer
 import pandas as pd
 import os
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QThread, pyqtSignal
+import time
+
 
 from yolo_annotator import yolo_model
 from algorithms_time import time_algorithms
@@ -73,8 +75,51 @@ class MyApp(QWidget):
         # WIDGET EMPTY
         grid.addWidget(QLabel(""), 0, 2)
 
+        # WIDGET WIZUALIZACJA
+        bottom_left_grid = QGridLayout()
         self.timer_label = QLabel("Elapsed Time: 0s")
-        grid.addWidget(self.timer_label, 1, 0)
+
+        label_tree_algorithm = QLabel("Drzewo decyzyjne")
+        label_tree_algorithm.setAlignment(Qt.AlignCenter)
+        bottom_left_grid.addWidget(label_tree_algorithm, 0, 0)
+
+        label_gauss_algorithm = QLabel("Algorytm autorski")
+        label_gauss_algorithm.setAlignment(Qt.AlignCenter)
+        bottom_left_grid.addWidget(label_gauss_algorithm, 0, 1)
+
+        label_classic_algorithm = QLabel("Podejście klasyczne")
+        label_classic_algorithm.setAlignment(Qt.AlignCenter)
+        bottom_left_grid.addWidget(label_classic_algorithm, 0, 2)
+
+        pixmap_tree = QPixmap("resources/Red.png")
+        self.image_label_tree = QLabel("No Image")
+        self.image_label_tree.setPixmap(pixmap_tree)
+        self.image_label_tree.setAlignment(Qt.AlignCenter)
+        self.image_label_tree.setStyleSheet("border: 1px solid black;")
+        bottom_left_grid.addWidget(self.image_label_tree, 1, 0)
+
+        pixmap_gauss = QPixmap("resources/Red.png")
+        self.image_label_gauss = QLabel("No Image")
+        self.image_label_gauss.setPixmap(pixmap_gauss)
+        self.image_label_gauss.setAlignment(Qt.AlignCenter)
+        self.image_label_gauss.setStyleSheet("border: 1px solid black;")
+        bottom_left_grid.addWidget(self.image_label_gauss, 1, 1)
+
+        pixmap_classic = QPixmap("resources/Red.png")
+        self.image_label_classic = QLabel("No Image")
+        self.image_label_classic.setPixmap(pixmap_classic)
+        self.image_label_classic.setAlignment(Qt.AlignCenter)
+        self.image_label_classic.setStyleSheet("border: 1px solid black;")
+        bottom_left_grid.addWidget(self.image_label_classic, 1, 2)
+
+
+        bottom_left_widget = QWidget()
+        bottom_left_layout = QVBoxLayout()
+        bottom_left_layout.addLayout(bottom_left_grid)
+        bottom_left_layout.addWidget(self.timer_label)
+        bottom_left_widget.setLayout(bottom_left_layout)
+        grid.addWidget(bottom_left_widget, 1, 0)
+
         # Set up a timer to update the timer label
         self.elapsed_seconds = 0
         self.timer = QTimer(self)
@@ -163,6 +208,29 @@ class MyApp(QWidget):
         # Increment elapsed time and update the timer label
         self.elapsed_seconds += 0.01
         self.timer_label.setText(f"Elapsed Time: {self.elapsed_seconds:.2f}s")
+        self.update_lights()
+    
+    def update_lights(self):
+        predictions = [self.decision_tree_time, self.gaus_time, 14]
+        labels_lights = [self.image_label_tree, self.image_label_gauss, self.image_label_classic]
+        
+        for i in range(len(predictions)):
+            if self.elapsed_seconds < self.czas_zielonego:
+                pixmap = QPixmap("resources/Red.png")
+                labels_lights[i].setPixmap(pixmap)
+            elif self.elapsed_seconds >= self.czas_zielonego and predictions[i] + self.czas_zielonego >= self.elapsed_seconds:
+                pixmap = QPixmap("resources/Green.png")
+                labels_lights[i].setPixmap(pixmap)
+            elif self.elapsed_seconds >= self.czas_zielonego and predictions[i] + self.czas_zielonego < self.elapsed_seconds and predictions[i] + 4 + self.czas_zielonego > self.elapsed_seconds:
+                if self.elapsed_seconds - int(self.elapsed_seconds) < 0.5:
+                    pixmap = QPixmap("resources/Green.png")
+                    labels_lights[i].setPixmap(pixmap)
+                else:
+                    pixmap = QPixmap("resources/Off.png")
+                    labels_lights[i].setPixmap(pixmap)
+            else:
+                pixmap = QPixmap("resources/Red.png")
+                labels_lights[i].setPixmap(pixmap)
 
     def choose_file(self):
         # Open a file dialog to choose a video file
@@ -195,28 +263,28 @@ class MyApp(QWidget):
 
     def oblicz_wyniki(self):
         czas_przejscia = self.data_group_corss.iloc[self.video_file_index]["Czas przechodzenia od zielonego"]
-        czas_zielonego = self.data_group_corss.iloc[self.video_file_index]["Początek ZŚ"]
+        self.czas_zielonego = self.data_group_corss.iloc[self.video_file_index]["Początek ZŚ"]
         klatka_zielonego = self.data_group_corss.iloc[self.video_file_index]["Początek zielonego światła klatka"]
 
-        self.label_start_zielonego.setText(f"Zielone światło zaczęło się sekundzie: {czas_zielonego}")
+        self.label_start_zielonego.setText(f"Zielone światło zaczęło się sekundzie: {self.czas_zielonego}")
         self.label_czas_przechodzenia.setText(f"Przechodnie przeszli przejście w {czas_przejscia}s")
 
         grupa_oczekujacych = self.yolo.create_annotated_image(self.filepath, klatka_zielonego)
         self.show_image()
 
-        decision_tree_time = self.algorithms.predict_crossing_time_tree(grupa_oczekujacych)[0]
-        gaus_time = self.algorithms.predict_crossing_time_gaus(grupa_oczekujacych)[0]
+        self.decision_tree_time = self.algorithms.predict_crossing_time_tree(grupa_oczekujacych)[0]
+        self.gaus_time = self.algorithms.predict_crossing_time_gaus(grupa_oczekujacych)[0]
 
-        self.label_wynik_tree.setText(f"Predykcja drzewa decyzyjnego: {decision_tree_time:.2f}s")
-        self.label_wynik_gauss.setText(f"Predykcja algorytmu autorskiego: {gaus_time:.2f}s")
+        self.label_wynik_tree.setText(f"Predykcja drzewa decyzyjnego: {self.decision_tree_time:.2f}s")
+        self.label_wynik_gauss.setText(f"Predykcja algorytmu autorskiego: {self.gaus_time:.2f}s")
         self.label_wynik_classic.setText(f"Podejście klasyczne:{14}s")
         
-        self.label_błąd_absolutny_tree.setText(f"Błąd absolutny drzewa decyzyjnego: {abs(decision_tree_time - czas_przejscia):.2f}s")
-        self.label_błąd_absolutny_gauss.setText(f"Błąd absolutny algorytmu autorskiego: {abs(gaus_time - czas_przejscia):.2f}s")
+        self.label_błąd_absolutny_tree.setText(f"Błąd absolutny drzewa decyzyjnego: {abs(self.decision_tree_time - czas_przejscia):.2f}s")
+        self.label_błąd_absolutny_gauss.setText(f"Błąd absolutny algorytmu autorskiego: {abs(self.gaus_time - czas_przejscia):.2f}s")
         self.label_błąd_absolutny_classic.setText(f"Błąd absolutny klasycznego podejścia: {abs(14 - czas_przejscia):.2f}s")
 
-        self.label_czas_zagrożenia_tree.setText(f"Błąd absolutny drzewa decyzyjnego: {self.oblicz_czas_zagrozenia(czas_przejscia, decision_tree_time):.2f}s")
-        self.label_czas_zagrożenia_gauss.setText(f"Błąd absolutny algorytmu autorskiego: {self.oblicz_czas_zagrozenia(czas_przejscia, gaus_time):.2f}s")
+        self.label_czas_zagrożenia_tree.setText(f"Błąd absolutny drzewa decyzyjnego: {self.oblicz_czas_zagrozenia(czas_przejscia, self.decision_tree_time):.2f}s")
+        self.label_czas_zagrożenia_gauss.setText(f"Błąd absolutny algorytmu autorskiego: {self.oblicz_czas_zagrozenia(czas_przejscia, self.gaus_time):.2f}s")
         self.label_czas_zagrożenia_classic.setText(f"Błąd absolutny klasycznego podejścia: {self.oblicz_czas_zagrozenia(czas_przejscia, 14):.2f}s")
 
 
