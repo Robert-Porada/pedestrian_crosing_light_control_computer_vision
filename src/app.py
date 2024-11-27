@@ -77,7 +77,7 @@ class MyApp(QWidget):
 
         # WIDGET WIZUALIZACJA
         bottom_left_grid = QGridLayout()
-        self.timer_label = QLabel("Elapsed Time: 0s")
+        self.timer_label = QLabel("Sekunda nagrania: 0")
 
         label_tree_algorithm = QLabel("Drzewo decyzyjne")
         label_tree_algorithm.setAlignment(Qt.AlignCenter)
@@ -187,7 +187,7 @@ class MyApp(QWidget):
         self.mediaPlayer.setVideoOutput(self.videoWidget)
 
         # Set the main window properties
-        self.setWindowTitle("2x3 Grid Layout with Video Player")
+        self.setWindowTitle("Traffic light control support system")
         self.setGeometry(100, 100, 1600, 900)
         self.show()
 
@@ -207,7 +207,7 @@ class MyApp(QWidget):
     def update_timer(self):
         # Increment elapsed time and update the timer label
         self.elapsed_seconds += 0.01
-        self.timer_label.setText(f"Elapsed Time: {self.elapsed_seconds:.2f}s")
+        self.timer_label.setText(f"Sekunda nagrania: {self.elapsed_seconds:.2f}")
         self.update_lights()
     
     def update_lights(self):
@@ -267,7 +267,7 @@ class MyApp(QWidget):
         klatka_zielonego = self.data_group_corss.iloc[self.video_file_index]["Początek zielonego światła klatka"]
 
         self.label_start_zielonego.setText(f"Zielone światło zaczęło się sekundzie: {self.czas_zielonego}")
-        self.label_czas_przechodzenia.setText(f"Przechodnie przeszli przejście w {czas_przejscia}s")
+        self.label_czas_przechodzenia.setText(f"Przechodnie przeszli przejście w {czas_przejscia:.2f}s")
 
         grupa_oczekujacych = self.yolo.create_annotated_image(self.filepath, klatka_zielonego)
         self.show_image()
@@ -283,9 +283,9 @@ class MyApp(QWidget):
         self.label_błąd_absolutny_gauss.setText(f"Błąd absolutny algorytmu autorskiego: {abs(self.gaus_time - czas_przejscia):.2f}s")
         self.label_błąd_absolutny_classic.setText(f"Błąd absolutny klasycznego podejścia: {abs(14 - czas_przejscia):.2f}s")
 
-        self.label_czas_zagrożenia_tree.setText(f"Błąd absolutny drzewa decyzyjnego: {self.oblicz_czas_zagrozenia(czas_przejscia, self.decision_tree_time):.2f}s")
-        self.label_czas_zagrożenia_gauss.setText(f"Błąd absolutny algorytmu autorskiego: {self.oblicz_czas_zagrozenia(czas_przejscia, self.gaus_time):.2f}s")
-        self.label_czas_zagrożenia_classic.setText(f"Błąd absolutny klasycznego podejścia: {self.oblicz_czas_zagrozenia(czas_przejscia, 14):.2f}s")
+        self.label_czas_zagrożenia_tree.setText(f"Czas zagrożenia drzewa decyzyjnego: {self.oblicz_czas_zagrozenia(czas_przejscia, self.decision_tree_time):.2f}s")
+        self.label_czas_zagrożenia_gauss.setText(f"Czas zagrożenia algorytmu autorskiego: {self.oblicz_czas_zagrozenia(czas_przejscia, self.gaus_time):.2f}s")
+        self.label_czas_zagrożenia_classic.setText(f"Czas zagrożenia klasycznego podejścia: {self.oblicz_czas_zagrozenia(czas_przejscia, 14):.2f}s")
 
 
     def oblicz_czas_zagrozenia(self, czas_przechodzenia_przechodniów, predykcja_czasu):
@@ -298,5 +298,6 @@ class MyApp(QWidget):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    app.setStyleSheet("QLabel{font-size: 15pt;}")
     app_func = MyApp()
     sys.exit(app.exec_())
