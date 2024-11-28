@@ -5,6 +5,7 @@ import numpy as np
 from sklearn.mixture import GaussianMixture
 from sklearn.model_selection import train_test_split
 from sklearn import tree
+from statistics import mean
 
 
 
@@ -24,17 +25,21 @@ class time_algorithms():
         return czas_potrzebny_na_przejscie
     
     def predict_crossing_time_gaus(self, pedestrians):
-        liczba_przechodniow_reguralnych = pedestrians[0] + pedestrians[2]
-        liczba_przechodniow_o_ogr_mob = pedestrians[1] + pedestrians[3]
+        wyniki = []
+        for i in range(500):
+            liczba_przechodniow_reguralnych = pedestrians[0] + pedestrians[2]
+            liczba_przechodniow_o_ogr_mob = pedestrians[1] + pedestrians[3]
 
-        czasy = []
+            czasy = []
 
-        for i in range(liczba_przechodniow_reguralnych):
-            czasy.append(self.gaus_model_reg.sample()[0][0])
-        for i in range(liczba_przechodniow_o_ogr_mob):
-            czasy.append(self.gaus_model_ogr.sample()[0][0])
-        if czasy:
-            czas_potrzebny_na_przejscie = max(czasy) + self.parameter_b
-        else:
-            czas_potrzebny_na_przejscie = 14
-        return czas_potrzebny_na_przejscie
+            for i in range(liczba_przechodniow_reguralnych):
+                czasy.append(self.gaus_model_reg.sample()[0][0])
+            for i in range(liczba_przechodniow_o_ogr_mob):
+                czasy.append(self.gaus_model_ogr.sample()[0][0])
+            if czasy:
+                czas_potrzebny_na_przejscie = max(czasy) + self.parameter_b
+            else:
+                czas_potrzebny_na_przejscie = 14
+            wyniki.append(czas_potrzebny_na_przejscie[0])
+        wynik_koncowy = mean(wyniki)
+        return wynik_koncowy

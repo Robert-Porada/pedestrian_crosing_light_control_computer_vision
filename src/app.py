@@ -273,7 +273,7 @@ class MyApp(QWidget):
         self.show_image()
 
         self.decision_tree_time = self.algorithms.predict_crossing_time_tree(grupa_oczekujacych)[0]
-        self.gaus_time = self.algorithms.predict_crossing_time_gaus(grupa_oczekujacych)[0]
+        self.gaus_time = self.algorithms.predict_crossing_time_gaus(grupa_oczekujacych)
 
         self.label_wynik_tree.setText(f"Predykcja drzewa decyzyjnego: {self.decision_tree_time:.2f}s")
         self.label_wynik_gauss.setText(f"Predykcja algorytmu autorskiego: {self.gaus_time:.2f}s")
